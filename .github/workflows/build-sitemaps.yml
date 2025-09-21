@@ -1,4 +1,4 @@
-name: Build URL lists & sitemap
+name: Build URL lists & RAW sitemap
 on:
   push:
     branches: [ main ]
@@ -10,29 +10,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate URL lists for Reconnaissance
+      - name: Generate URL lists & RAW sitemap
+        run: |
+          set -euo pipefail
+          OWNER="Agdistys"
+          REPO="Conversations"
+          PAGES_BASE="https://${OWNER}.github.io/${REPO}"
+          RAW_BASE="https://raw.githubusercontent.com/${OWNER}/${REPO}/main"
+
+          # 👉 Ajoute d'autres dossiers ici si besoin
+          DIRS=("Reconnaissance")
+
+          for DIR in "${DIRS[@]}"; do
+            if [ -d "$DIR" ]; then
+              LIST="$(mktemp)"
+              find "$DIR" -type f | sort > "$LIST"
+
+              # fichiers .txt avec toutes les URLs
+              awk -v b="$PAGES_BASE" '{print b"/"$0}' "$LIST" > "${DIR//\//-}-urls-pages.txt"
+              awk -v b="$RAW_BASE"   '{print b"/"$0}' "$LIST" > "${DIR//\//-}-urls-raw.txt"
+
+              # sitemap XML (version RAW)
+              {
+                echo '<?xml version="1.0" encoding="UTF-8"?>'
+                echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                while IFS= read -r f; do
+                  printf '  <url><loc>%s/%s</loc></url>\n' "$RAW_BASE" "$f"
+                done < "$LIST"
+                echo '</urlset>'
+              } > "sitemap-${DIR//\//-}-raw.xml"
+            fi
+          done
+
+      - name: Commit artifacts
         run: |
           set -e
-          BASE_PAGES="https://agdistys.github.io/Conversations"
-          BASE_RAW="https://raw.githubusercontent.com/Agdistys/Conversations/main"
-          # listes .txt
-          find Reconnaissance -type f | sort > /tmp/recon-files.txt
-          awk -v b="$BASE_PAGES" '{print b"/"$0}' /tmp/recon-files.txt > reconnaissance-urls-pages.txt
-          awk -v b="$BASE_RAW"   '{print b"/"$0}' /tmp/recon-files.txt > reconnaissance-urls-raw.txt
-          # sitemap XML simple
-          {
-            echo '<?xml version="1.0" encoding="UTF-8"?>'
-            echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-            while IFS= read -r f; do
-              printf '  <url><loc>%s/%s</loc></url>\n' "$BASE_PAGES" "$f"
-            done < /tmp/recon-files.txt
-            echo '</urlset>'
-          } > sitemap-reconnaissance.xml
-
-      - name: Commit URL lists
-        run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reconnaissance-urls-raw.txt reconnaissance-urls-pages.txt sitemap-reconnaissance.xml
-          git commit -m "ci: generate raw/pages URL lists & sitemap for Reconnaissance" || echo "nothing to commit"
-          git push
+          git add *-urls-raw.txt *-urls-pages.txt sitemap-*-raw.xml || true
+          git commit -m "ci: update raw/pages URL lists & RAW sitemap" || echo "nothing to commit"
+          git push || true
