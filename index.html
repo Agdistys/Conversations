@@ -1,164 +1,104 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Conversations — Galerie</title>
-  <style>
-    :root{--bg:#0b0e14;--fg:#e6e6e6;--muted:#9aa4b2;--card:#111826;--accent:#8bd3dd;--border:#1f2a3a}
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    header{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,#0f1422,#0b0e14);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    h1{margin:0;font-size:18px}
-    .muted{color:var(--muted)}
-    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-left:auto}
-    select,button{appearance:none;border:1px solid var(--border);background:#121a29;color:var(--fg);padding:8px 10px;border-radius:10px}
-    button:hover{background:#152033}
-    main{padding:14px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
-    .thumb{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
-    .cap{padding:8px 10px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
-    .cap b{color:var(--fg);font-weight:600}
-    .cap a{color:inherit;text-decoration:none}
-    .cap a:hover{color:#fff;text-decoration:underline}
-    .status{padding:8px 16px;color:var(--muted);border-top:1px solid var(--border)}
-    dialog{border:0;padding:0;background:transparent}
-    dialog::backdrop{background:rgba(0,0,0,.75)}
-    .light{display:flex;align-items:center;justify-content:center;min-width:100vw;min-height:100vh}
-    .light img{max-width:90vw;max-height:88vh;border-radius:14px;border:1px solid var(--border);background:#000}
-    .nav{position:fixed;top:50%;transform:translateY(-50%);width:100%;display:flex;justify-content:space-between;pointer-events:none}
-    .nav button{pointer-events:auto;background:rgba(0,0,0,.5);border:1px solid var(--border);padding:10px 14px;border-radius:12px}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conversations — Galerie publique</title>
+<style>
+  body{margin:0;background:#0b0b0c;color:#e8e8ec;font:16px/1.6 system-ui,Segoe UI,Inter,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:22px}
+  h1{font-size:1.6rem;margin:.2rem 0 1rem;color:#F0C45A}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .card{background:#121214;border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden}
+  .card a{color:inherit;text-decoration:none}
+  .card img{width:100%;height:160px;object-fit:cover;display:block;background:#000}
+  .name{padding:8px 10px;font-size:.9rem;color:#F0C45A}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 18px}
+  button{padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);color:#F0C45A;cursor:pointer}
+  button:hover{background:rgba(240,196,90,.14)}
+  .hint{color:#bfc4cf;font-size:.9rem;margin:4px 0 16px}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Conversations — Galerie multi‑mois <span class="muted">(PNG/JPG/WEBP)</span></h1>
-    <div class="controls">
-      <label class="muted" for="month">Mois :</label>
-      <select id="month"></select>
-      <label class="muted" for="sort">Tri :</label>
-      <select id="sort">
-        <option value="natural-asc">Naturel (1,2,10) ↑</option>
-        <option value="natural-desc">Naturel (…10,2,1) ↓</option>
-        <option value="name-asc">Nom A→Z</option>
-        <option value="name-desc">Nom Z→A</option>
-      </select>
-      <button id="refresh">Rafraîchir</button>
-    </div>
-  </header>
-
-  <main>
-    <div id="grid" class="grid"></div>
-  </main>
-
-  <div class="status" id="status">Chargement…</div>
-
-  <dialog id="box">
-    <div class="light">
-      <img id="full" alt="Aperçu" />
-    </div>
-    <div class="nav">
-      <button id="prev" aria-label="Précédent">◀</button>
-      <button id="next" aria-label="Suivant">▶</button>
-    </div>
-  </dialog>
+<div class="wrap">
+  <h1>Conversations — Reconnaissance</h1>
+  <div class="hint">Cette page liste automatiquement les fichiers de <code>Reconnaissance/</code>.</div>
+  <div class="bar">
+    <button id="btnPages">Télécharger la liste (URLs Pages)</button>
+    <button id="btnRaw">Télécharger la liste (URLs RAW)</button>
+  </div>
+  <div id="grid" class="grid">Chargement…</div>
+</div>
 
 <script>
-(function(){
-  // === CONFIG ===
-  const OWNER = 'Agdistys';
-  const REPO  = 'Conversations'; // <- mets le nom du dépôt dédié
-  const BRANCH = 'main';
-  const ROOT = ''; // racine : chaque sous-dossier = AAAA-MM
+// === CONFIG — adapte seulement ces 3 constantes si nécessaire ===
+const OWNER = 'Agdistys';
+const REPO  = 'Conversations';
+const PATH  = 'Reconnaissance'; // dossier que tu veux lister
+// ================================================================
 
-  const API = (path='')=>`https://api.github.com/repos/${OWNER}/${REPO}/contents/${encodeURIComponent(path)}?ref=${BRANCH}`;
-  const PAGES_BASE = `https://${OWNER.toLowerCase()}.github.io/${REPO}/`;
+const api = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
+const pageBase = `https://${OWNER.toLowerCase()}.github.io/${REPO}/${PATH}/`;
+const rawBase  = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${PATH}/`;
 
-  const monthSel = document.getElementById('month');
-  const sortSel  = document.getElementById('sort');
-  const grid     = document.getElementById('grid');
-  const status   = document.getElementById('status');
+function saveText(filename, content){
+  const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), {href:url, download:filename});
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 
-  let items = []; // {name,urlPages}
-  let current = 0; // index lightbox
-  const collator = new Intl.Collator(undefined, { numeric:true, sensitivity:'base' });
+function isPreviewable(name){
+  return /\.(png|jpe?g|gif|webp|svg|pdf)$/i.test(name);
+}
 
-  function sortItems(mode){
-    const byName = (a,b)=> a.name.localeCompare(b.name);
-    const byNameDesc =(a,b)=> b.name.localeCompare(a.name);
-    const byNatural =(a,b)=> collator.compare(a.name,b.name);
-    const byNaturalDesc=(a,b)=> collator.compare(b.name,a.name);
-    switch(mode){
-      case 'name-asc': items.sort(byName); break;
-      case 'name-desc': items.sort(byNameDesc); break;
-      case 'natural-desc': items.sort(byNaturalDesc); break;
-      case 'natural-asc':
-      default: items.sort(byNatural); break;
-    }
-  }
+fetch(api, {cache:'no-store'})
+  .then(r => r.json())
+  .then(items => {
+    if(!Array.isArray(items)) throw new Error('API GitHub: réponse inattendue');
+    // Garde uniquement les fichiers (pas de sous-dossiers)
+    const files = items.filter(x => x.type === 'file');
 
-  async function listMonths(){
-    status.textContent = 'Chargement des mois…';
-    const r = await fetch(API(ROOT));
-    if(!r.ok){ status.textContent = 'Erreur de chargement ('+r.status+').'; return; }
-    const data = await r.json();
-    const months = data.filter(x => x.type==='dir' && /^\d{4}-\d{2}$/.test(x.name))
-                       .map(x=>x.name)
-                       .sort((a,b)=> b.localeCompare(a)); // récent d'abord
-    monthSel.innerHTML = '';
-    months.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; monthSel.appendChild(o); });
-    return months[0];
-  }
+    // Construire la grille
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    files.forEach(f => {
+      const card = document.createElement('div'); card.className = 'card';
+      const isImg = /\.(png|jpe?g|gif|webp|svg)$/i.test(f.name);
+      const isPdf = /\.pdf$/i.test(f.name);
+      const img = document.createElement(isImg ? 'img' : 'div');
+      if(isImg){
+        img.src = pageBase + encodeURIComponent(f.name);
+        img.alt = f.name; img.loading = 'lazy';
+      }else{
+        img.style = 'height:160px;display:flex;align-items:center;justify-content:center;background:#000;color:#8892a6;font-size:.9rem';
+        img.textContent = isPdf ? 'PDF' : 'Fichier';
+      }
+      const a = document.createElement('a');
+      a.href = pageBase + encodeURIComponent(f.name);
+      a.target = '_blank'; a.rel = 'noopener';
+      a.appendChild(img);
 
-  async function loadMonth(m){
-    status.textContent = 'Chargement des images de '+m+'…';
-    const r = await fetch(API(m));
-    if(!r.ok){ status.textContent = 'Erreur de chargement ('+r.status+').'; return; }
-    const data = await r.json();
-    const exts = new Set(['.png','.jpg','.jpeg','.webp','.gif','.svg']);
-    items = data.filter(x=> x.type==='file' && exts.has(x.name.toLowerCase().replace(/.*(\.[^.]+)$/,'$1')))
-                .map(x=>({ name:x.name, urlPages:PAGES_BASE + encodeURIComponent(m) + '/' + encodeURIComponent(x.name) }));
-    sortItems(sortSel.value); render();
-  }
+      const name = document.createElement('div'); name.className = 'name';
+      name.textContent = f.name;
 
-  function render(){
-    grid.innerHTML='';
-    items.forEach((it,i)=>{
-      const fig = document.createElement('figure');
-      fig.className='card';
-      const img = document.createElement('img');
-      img.loading='lazy'; img.decoding='async'; img.alt=it.name; img.src=it.urlPages; img.className='thumb';
-      img.addEventListener('click', ()=> openLightbox(i));
-      const cap = document.createElement('figcaption');
-      cap.className='cap'; cap.innerHTML = `<b>${it.name}</b> <a href="${it.urlPages}" target="_blank" rel="noopener">Ouvrir</a>`;
-      fig.appendChild(img); fig.appendChild(cap); grid.appendChild(fig);
+      card.appendChild(a);
+      card.appendChild(name);
+      grid.appendChild(card);
     });
-    status.textContent = items.length? `${items.length} image(s).` : 'Aucune image trouvée.';
-  }
 
-  // Lightbox
-  const box = document.getElementById('box');
-  const full = document.getElementById('full');
-  const prev = document.getElementById('prev');
-  const next = document.getElementById('next');
-  function openLightbox(i){ current=i; updateLightbox(); box.showModal(); }
-  function updateLightbox(){ full.src = items[current].urlPages; full.alt = items[current].name; }
-  function step(d){ current=(current+d+items.length)%items.length; updateLightbox(); }
-  prev.addEventListener('click', ()=> step(-1));
-  next.addEventListener('click', ()=> step(1));
-  box.addEventListener('click', (e)=>{ if(e.target === box) box.close(); });
-  window.addEventListener('keydown', (e)=>{ if(!box.open) return; if(e.key==='Escape') box.close(); if(e.key==='ArrowLeft') step(-1); if(e.key==='ArrowRight') step(1); });
+    // Générateurs de listes
+    const pagesList = files.map(f => pageBase + encodeURIComponent(f.name)).join('\n');
+    const rawList   = files.map(f => rawBase  + encodeURIComponent(f.name)).join('\n');
 
-  // Events
-  sortSel.addEventListener('change', ()=>{ sortItems(sortSel.value); render(); });
-  document.getElementById('refresh').addEventListener('click', async ()=>{ const m = monthSel.value || await listMonths(); loadMonth(m); });
-  monthSel.addEventListener('change', ()=> loadMonth(monthSel.value));
-
-  // Init
-  (async function(){ const first = await listMonths(); if(first) { monthSel.value=first; loadMonth(first); } })();
-})();
+    document.getElementById('btnPages').onclick = () => saveText(`${PATH}-urls-pages.txt`, pagesList);
+    document.getElementById('btnRaw').onclick   = () => saveText(`${PATH}-urls-raw.txt`,   rawList);
+  })
+  .catch(err => {
+    document.getElementById('grid').textContent = 'Erreur de chargement : ' + err.message;
+    console.error(err);
+  });
 </script>
 </body>
 </html>
