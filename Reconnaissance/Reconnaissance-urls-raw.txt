@@ -1,0 +1,40 @@
+(() => {
+  // 1) Récupère owner, repo, ref (branche OU SHA) et chemin du dossier depuis l’URL
+  const m = location.pathname.match(/^\/([^\/]+)\/([^\/]+)\/tree\/([^\/]+)\/?(.*)$/);
+  if(!m){ alert("❌ Ouvre d'abord une page 'tree' d'un dossier (pas la racine du repo)."); return; }
+  const [_, owner, repo, ref, rest] = m;
+  const path = rest.replace(/\/$/, ''); // ex: 'Reconnaissance' ou 'foo/bar'
+
+  // 2) Récupère les noms de fichiers visibles dans le tableau
+  const anchors = [...document.querySelectorAll('tr.js-navigation-item a.js-navigation-open')];
+  const files = anchors
+    .map(a => a.getAttribute('title') || a.textContent.trim())
+    .filter(name => !!name && !name.endsWith('/')); // seulement fichiers
+
+  if(files.length === 0){
+    alert('⚠️ Aucun fichier détecté dans ce dossier (ou GitHub n’a pas fini de charger).');
+    return;
+  }
+
+  // 3) Construit les URLs RAW (+ Pages en option)
+  const enc = s => encodeURIComponent(s).replace(/%2F/g,'/');
+  const baseRaw   = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path ? path + '/' : ''}`;
+  const basePages = `https://${owner.toLowerCase()}.github.io/${repo}/${path ? path + '/' : ''}`;
+
+  const listRaw   = files.map(name => baseRaw   + enc(name)).join('\n');
+  const listPages = files.map(name => basePages + enc(name)).join('\n');
+
+  // 4) Télécharge le .txt (RAW). Laisse commentées les 2 lignes pour Pages si tu veux les deux.
+  const save = (filename, content) => {
+    const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+    const url  = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), {href:url, download:filename});
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 500);
+  };
+
+  save(`${path.split('/').pop()}-urls-raw.txt`, listRaw);
+  // save(`${path.split('/').pop()}-urls-pages.txt`, listPages);
+
+  alert(`✅ ${files.length} liens RAW exportés.\nLe fichier .txt a été téléchargé.`);
+})();
