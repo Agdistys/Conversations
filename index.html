@@ -1,3 +1,25 @@
+<div class="bar">
+  <button id="btnRaw">Télécharger la liste (URLs RAW)</button>
+</div>
+<script>
+const RAW_BASE = 'https://raw.githubusercontent.com/Agdistys/Conversations/main/Reconnaissance/';
+fetch('https://api.github.com/repos/Agdistys/Conversations/contents/Reconnaissance',{cache:'no-store'})
+  .then(r=>r.json())
+  .then(items=>{
+    const files = Array.isArray(items) ? items.filter(x=>x.type==='file') : [];
+    const rawList = files.map(f => RAW_BASE + encodeURIComponent(f.name)).join('\n');
+    document.getElementById('btnRaw').onclick = () => {
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([rawList],{type:'text/plain;charset=utf-8'}));
+      a.download='Reconnaissance-urls-raw.txt'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    };
+  })
+  .catch(e=>console.error(e));
+</script>
+
+
+
 <!doctype html>
 <html lang="fr">
 <head>
